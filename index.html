@@ -289,8 +289,8 @@ function cellKey(e){
 
 /* evidence */
 function endView(){const c=S.c;
- const en=`STORYTELLING SIMULATION – Formative feedback\nLearning goal: ACHIEVED ✓\nI read the story, completed the sentences and recreated a new version of it: ${PL[c.place][0]}, a ${c.weather} day, a ${c.color} balloon, Leo is ${AGE[c.age][0]}${c.hobby?', he likes '+HB[c.hobby][0]:''}.\nNext step: write two more sentences about Leo. Use past simple with “yesterday”.`;
- const es=`Objetivo de aprendizaje: LOGRADO ✓<br>Leí la historia, completé las oraciones y recreé una versión nueva: ${PL[c.place][2]}, día ${WE[c.weather][1]}, globo ${COL[c.color][1]}, Leo tiene ${AGE[c.age][1]} años${c.hobby?', le gusta '+HB[c.hobby][1]:''}.<br>Próximo paso: escribe dos oraciones más sobre Leo. Usa past simple con “yesterday”.`;
+ const en=`Learning goal: ACHIEVED ✓`;
+ const es=`Objetivo de aprendizaje: LOGRADO ✓`;
  return `<div class="card" style="text-align:center"><h2>🎉 ${T('Your story is ready!','¡Tu historia está lista!')}</h2><div class="badge">✅ ${T('Learning goal: Achieved','Objetivo: Logrado')}</div></div>
  <div class="card">${scene(c)}
  <div class="row" style="margin:12px 0"><button class="go" onclick="listen(1)">🔊 ${T('Listen','Escuchar')}</button><button onclick="listen(.8)">🐢 ${T('Slow','Escuchar más lento')}</button></div>
