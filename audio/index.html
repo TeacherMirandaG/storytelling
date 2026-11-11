@@ -54,6 +54,12 @@ input[type=text]{font:inherit;font-size:1.1em;padding:10px 14px;border-radius:16
 .wl>span{background:#f1ecff;border-radius:12px;padding:2px 12px;font-size:.85em}
 .wl>span.ok{text-decoration:line-through}.wl>span.ok::before{content:'✓ '}
 .badge{display:inline-block;background:#d9f9ec;color:#0a5a3e;border:3px solid #1fa97a;border-radius:20px;padding:8px 22px;font-size:1.3em;font-weight:600}
+.metrics{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:center;margin-top:10px;text-align:left}
+.metrics>.cat{flex:0 1 240px}.mlist{flex:1 1 270px;max-width:380px}
+.mrow{margin:0 0 10px}.mt{display:flex;justify-content:space-between;gap:8px}
+.mb{height:10px;background:#ece7ff;border-radius:8px;overflow:hidden;margin:2px 0}.mb i{display:block;height:100%;background:var(--pri);border-radius:8px}
+.mrow small{font-size:.75em;color:#6b6490}
+.mtime{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.mtime>div{flex:1 1 120px;background:#f1ecff;border-radius:16px;padding:6px 12px;text-align:center}
 footer{text-align:center;padding:18px;font-size:.8em;color:#6b6490}
 pre{white-space:pre-wrap;font:inherit;background:#f3f0ff;border-radius:16px;padding:14px}
 @media(prefers-reduced-motion:no-preference){
@@ -93,7 +99,7 @@ const SKY={sunny:['yellow sun','el sol amarillo'],cloudy:['white clouds','las nu
 const HB={soccer:['playing soccer','jugar al fútbol','⚽'],drawing:['drawing','dibujar','🎨'],dancing:['dancing','bailar','💃'],reading:['reading','leer','📚'],swimming:['swimming','nadar','🏊']};
 const AGE={10:['ten','diez'],11:['eleven','once'],12:['twelve','doce'],13:['thirteen','trece'],14:['fourteen','catorce']};
 const D0={place:'park',weather:'cloudy',color:'blue',age:12,hobby:null,shirt:null};
-let S={es:0,st:'read',c:{...D0},l3:1,q:null,stat:{read:[0,0],write:[0,0],tense:[0,0]},miss:[]};
+let S={es:0,t0:Date.now(),st:'read',c:{...D0},l3:1,q:null,stat:{read:[0,0],write:[0,0],tense:[0,0]},miss:[]};
 
 function story(c){const k=COL[c.color][1];return [
 [`Leo is ${AGE[c.age][0]} years old.`,`Leo tiene ${AGE[c.age][1]} años.`],
@@ -172,7 +178,7 @@ function toggleES(){S.es=!S.es;document.body.classList.toggle('tr',S.es);const b
 const stars=n=>`<span class="stars" aria-label="Level ${n}">${'★'.repeat(n)}${'☆'.repeat(3-n)}</span>`;
 function steps(){const o=['read','cloze','create'],cur=['write','puzzle','end'].includes(S.st)?'create':S.st,n=[['1. Read','1. Lee'],['2. Complete','2. Completa'],['3. Recreate','3. Recrea']];
  return `<div class="steps">${n.map((x,i)=>`<div class="step ${o[i]==cur?'cur':(o.indexOf(cur)>i||S.st=='end')?'ok':''}">${T(x[0],x[1])}</div>`).join('')}</div>`}
-function go(s){stopA();S.st=s;render()}
+function go(s){stopA();S.st=s;if(s=='end'&&!S.tEnd)S.tEnd=Date.now();render()}
 function render(){
  const a=document.getElementById('app');let h=(S.st!='read'?`<button onclick="back()" style="margin-bottom:12px">⬅ ${T('Back','Volver')}</button>`:'')+steps();
  if(S.st=='read')h+=readView();
@@ -271,7 +277,7 @@ function makePuz(N){
     for(let i=0;i<w.length;i++)g[r+d[0]*i][c+d[1]*i]=w[i].toUpperCase();placed=true}
    if(!placed){ok=false;break}}
   if(ok){const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!g[r][c])g[r][c]=L[Math.random()*26|0];
-   return{g,found:[],fc:[],sel:null}}}
+   return{g,found:[],fc:[],sel:null,t0:Date.now(),t1:null,tries:0}}}
  return makePuz(N+1)}
 function puzView(){if(!S.puz)S.puz=makePuz(12);const p=S.puz,N=p.g.length,tot=ALLW().length;
  const cells=p.g.map((row,r)=>row.map((ch,c)=>{const cw=p.cw&&p.cw[r+','+c];return `<button class="cell ${p.fc.includes(r+','+c)?'fnd':''}" ${cw?`style="background:${WCOL(cw)};border-color:${WBR(cw)}"`:''} data-r="${r}" data-c="${c}" tabindex="${r+c?-1:0}" aria-label="${ch}, row ${r+1}, column ${c+1}" onclick="cellClick(this)">${ch}</button>`}).join('')).join('');
@@ -300,6 +306,7 @@ function cellClick(el){
  if(!p.sel){p.sel=[r,c];el.classList.add('sel');pmsg('Now tap the last letter.','Ahora toca la última letra.',1);return}
  const [r0,c0]=p.sel;p.sel=null;document.querySelectorAll('.cell.sel').forEach(x=>x.classList.remove('sel'));
  if(r0==r&&c0==c)return;
+ p.tries=(p.tries||0)+1;
  const dr=r-r0,dc=c-c0;
  if(dr&&dc&&Math.abs(dr)!=Math.abs(dc)||false){pmsg('Not a straight line. Try again.','No es una línea recta. Inténtalo otra vez.',0);return}
  const n=Math.max(Math.abs(dr),Math.abs(dc))+1,sr=Math.sign(dr),sc=Math.sign(dc),pos=[];
@@ -310,6 +317,7 @@ function cellClick(el){
  p.found.push(w);p.cw=p.cw||{};pos.forEach(x=>{const k=x[0]+','+x[1],e=gc(x[0],x[1]);p.fc.push(k);p.cw[k]=w;e.classList.add('fnd');e.style.background=WCOL(w);e.style.borderColor=WBR(w)});
  document.getElementById('w-'+w).classList.add('ok');
  const tot=ALLW().length;document.getElementById('cnt').textContent=p.found.length+'/'+tot;updateCake();
+ p.t1=p.found.length==tot?Date.now():null;
  if(p.found.length==tot)pmsg('🎉 You found all the words!','🎉 ¡Encontraste todas las palabras!',1);
  else pmsg('✅ Great! You found “'+w+'”.','✅ ¡Muy bien! Encontraste “'+w+'” ('+(TR[w]||'')+').',1)}
 function cellKey(e){
@@ -329,13 +337,22 @@ function catSvg(){return `<svg viewBox="0 0 220 200" role="img" aria-label="A ha
 <path d="M82 158q6 7 12 0t12 0 12 0 12 0 8 0M94 139q5 6 10 0t10 0 10 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
 <rect x="107" y="117" width="6" height="16" rx="2" fill="#4aa8ff"/><ellipse cx="110" cy="112" rx="3.5" ry="5.5" fill="#ffd23f"/>
 <ellipse cx="80" cy="170" rx="10" ry="8" fill="#ffc98f" stroke="#e89b52" stroke-width="1.5"/><ellipse cx="140" cy="170" rx="10" ry="8" fill="#ffc98f" stroke="#e89b52" stroke-width="1.5"/></svg>`}
+const mmss=ms=>{const s=Math.max(0,Math.round(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+function metricsHtml(){
+ const st=S.stat,p=S.puz||{found:[],tries:0},pc=(a,b)=>b?Math.round(100*a/b):0;
+ const wr=[st.write[0]+st.tense[0],st.write[1]+st.tense[1]],tries=Math.max(p.tries||0,p.found.length);
+ const row=(en,es,a,b,sen,ses)=>`<div class="mrow"><div class="mt"><span>${T(en,es)}</span><b>${pc(a,b)}%</b></div><div class="mb"><i style="width:${pc(a,b)}%"></i></div><small>${a}/${b} ${T(sen,ses)}</small></div>`;
+ return `<div class="mlist"><div class="mtime"><div>⏱ ${T('Total time','Tiempo total')}<br><b>${mmss((S.tEnd||Date.now())-S.t0)}</b></div><div>🎯 ${T('Challenge time','Tiempo del desafío')}<br><b>${p.t1?mmss(p.t1-p.t0):'--:--'}</b></div></div>
+ ${row('Complete','Completar',st.read[0],st.read[1],'correct on the first try','correctas al primer intento')}
+ ${row('Write','Escribir',wr[0],wr[1],'correct on the first try','correctas al primer intento')}
+ ${row('Word search','Sopa de letras',p.found.length,tries,'tries were correct','intentos acertados')}</div>`}
 /* evidence */
 function endView(){const c=S.c;
- return `<div class="card" style="text-align:center"><h2 style="margin-top:0">🎉 ${T('Congratulations! Well done!','¡Felicitaciones! ¡Bien hecho!')}</h2><p style="margin:.2em 0 .8em">${T('Your story is ready!','¡Tu historia está lista!')}</p><div class="badge">✅ ${T('Learning goal: Achieved','Objetivo: Logrado')}</div>${catSvg()}</div>
+ return `<div class="card" style="text-align:center"><h2 style="margin-top:0">🎉 ${T('Congratulations! Well done!','¡Felicitaciones! ¡Bien hecho!')}</h2><p style="margin:.2em 0 .8em">${T('Your story is ready!','¡Tu historia está lista!')}</p><div class="badge">✅ ${T('Learning goal: Achieved','Objetivo: Logrado')}</div><div class="metrics"><div class="cat">${catSvg()}</div>${metricsHtml()}</div></div>
  <div class="card"><h2 style="margin-top:0">${T(`The Little ${c.color[0].toUpperCase()+c.color.slice(1)} Balloon`,`El pequeño globo ${COL[c.color][1]}`)}</h2>${scene(c,1)}
  <div class="row" style="margin:12px 0"><button class="go" onclick="listen(1)">🔊 ${T('Listen','Escuchar')}</button><button onclick="listen(.8)">🐢 ${T('Slow','Escuchar más lento')}</button></div>
  <div class="story">${story(c).map((s,i)=>`<p><span class="sn" id="s${i}">${s[0]}</span><span class="es">${s[1]}</span></p>`).join('')}</div></div>
- <div class="row" style="justify-content:center;margin-bottom:16px"><button onclick="S={es:S.es,st:'read',c:{...D0},l3:1,q:null,stat:{read:[0,0],write:[0,0],tense:[0,0]},miss:[]};render()">🔁 ${T('Start again','Empezar de nuevo')}</button></div>`}
+ <div class="row" style="justify-content:center;margin-bottom:16px"><button onclick="S={es:S.es,t0:Date.now(),st:'read',c:{...D0},l3:1,q:null,stat:{read:[0,0],write:[0,0],tense:[0,0]},miss:[]};render()">🔁 ${T('Start again','Empezar de nuevo')}</button></div>`}
 function allLines(){const out=new Set(),b={...D0},add=c=>story(c).forEach(s=>out.add(s[0]));
  for(const p in PL)add({...b,place:p});
  for(const w in WE)for(const c in COL)add({...b,weather:w,color:c});
