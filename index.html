@@ -79,8 +79,7 @@ const D0={place:'park',weather:'cloudy',color:'blue',age:12,hobby:null,shirt:nul
 let S={es:0,st:'read',c:{...D0},l3:1,q:null,stat:{read:[0,0],write:[0,0],tense:[0,0]},miss:[]};
 
 function story(c){const k=COL[c.color][1];return [
-['Leo is a boy.','Leo es un niño.'],
-[`He is ${AGE[c.age][0]} years old.`,`Tiene ${AGE[c.age][1]} años.`],
+[`Leo is ${AGE[c.age][0]} years old.`,`Leo tiene ${AGE[c.age][1]} años.`],
 ['Today is his birthday.','Hoy es su cumpleaños.'],
 c.hobby&&[`Leo likes ${HB[c.hobby][0]}.`,`A Leo le gusta ${HB[c.hobby][1]}.`],
 c.shirt&&[`He wears a ${c.shirt} T-shirt.`,`Lleva una polera ${COL[c.shirt][1]}.`],
@@ -138,10 +137,10 @@ function warn(t){let e=document.getElementById('amsg');
 function clip(t,rate,done){
  let f=0;const strict=true;
  const fb=()=>{if(f)return;f=1;
-  if(strict){warn('⚠️ No se pudo cargar el audio ElevenLabs: audio/'+slug(t)+'.mp3 · Revisa que la carpeta audio/ esté junto a index.html.');done()}
+  if(strict){warn('⚠️ No se pudo cargar el audio: '+new URL('audio/'+slug(t)+'.mp3',location.href).href);done()}
   else fallback(t,rate,done)};
  const a=new Audio('audio/'+slug(t)+'.mp3');cur=a;a.playbackRate=rate;a.preservesPitch=true;
- a.onended=()=>{if(!f){f=1;done()}};a.onerror=fb;a.play().catch(fb)}
+ a.onended=()=>{if(!f){f=1;done()}};a.onerror=fb;a.play().catch(e=>{if(e&&e.name==='AbortError')return;fb()})}
 function say(list,rate){
  stopA();const id=spk;let i=0;
  (function nx(){if(id!=spk||i>=list.length)return;
@@ -173,7 +172,7 @@ function readView(){const st=story(D0.c||D0);
  <div class="story">${st.map((s,i)=>`<p><span class="sn" id="s${i}">${s[0]}</span><span class="es">${s[1]}</span></p>`).join('')}</div>
  <div class="row" style="margin-top:14px"><button class="go" onclick="enter('cloze')">${T('Next: Complete ➜','Siguiente: Completa ➜')}</button></div></div>`}
 function clozeItems(){const mk=(s,a,o,h,re,lv)=>({s,a,o,h,re,lv,cat:'read',bank:lv==2});return [
- mk('He is ___ years old.','twelve',['ten','twelve','two'],'Leo is twelve years old.','Tiene ___ años.',1),
+ mk('Leo is ___ years old.','twelve',['ten','twelve','two'],'Leo is twelve years old.','Leo tiene ___ años.',1),
  mk('Today is his ___.','birthday',['birthday','holiday','Monday'],'Today is his birthday.','Hoy es su ___.',1),
  mk('His ___ gives him a big blue balloon.','grandfather',['grandfather','teacher','father'],'His grandfather gives him a big blue balloon.','Su ___ le regala un globo grande azul.',1),
  mk('The wind is ___.','strong',['strong','blue','happy'],'The wind is strong. Whoosh!','El viento está ___.',1),
@@ -298,7 +297,19 @@ function endView(){const c=S.c;
  <div class="card"><h2>${T('Learning evidence','Evidencia de aprendizaje')}</h2>
  <pre id="rep">${en}</pre><p class="es">${es}</p>
  <div class="row"><button class="go" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.getElementById('rep').textContent);this.textContent='✅ Copied'">📋 Copy</button><button onclick="window.print()">🖨 Print</button><button onclick="S={es:S.es,st:'read',c:{...D0},l3:1,q:null,stat:{read:[0,0],write:[0,0],tense:[0,0]},miss:[]};render()">🔁 ${T('Start again','Empezar de nuevo')}</button></div></div>`}
-render();
+function allLines(){const out=new Set(),b={...D0},add=c=>story(c).forEach(s=>out.add(s[0]));
+ for(const p in PL)add({...b,place:p});
+ for(const w in WE)for(const c in COL)add({...b,weather:w,color:c});
+ for(const a in AGE){add({...b,age:+a});out.add(`Leo is ${AGE[a][0]} years old.`)}
+ for(const k in HB)add({...b,hobby:k});for(const k in COL)add({...b,shirt:k});
+ out.add('The wind is strong.');out.add('It looks like a little blue star.');
+ for(const p in PL)out.add(`Yesterday, they walked to the ${PL[p][0]}.`);return [...out]}
+async function audioTest(){
+ const L=allLines(),a=document.getElementById('app'),miss=[];
+ a.innerHTML='<div class="card"><h2>Audio test</h2><p id="at">Checking…</p></div>';
+ await Promise.all(L.map(async t=>{try{const r=await fetch('audio/'+slug(t)+'.mp3',{method:'HEAD'});if(!r.ok)miss.push(slug(t)+'.mp3 (HTTP '+r.status+')')}catch(e){miss.push(slug(t)+'.mp3 (error)')}}));
+ document.getElementById('at').innerHTML=miss.length?`❌ ${L.length-miss.length}/${L.length} audios found. Missing:<br>`+miss.sort().join('<br>'):`✅ ${L.length}/${L.length} audios found in ${new URL('audio/',location.href).href}`}
+if(/audiotest/.test(location.search))audioTest();else render();
 </script>
 </body>
 </html>
